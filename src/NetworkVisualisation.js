@@ -36,6 +36,16 @@ const NetworkVisualisation = ({ nodes, links }) => {
             g = svg.append('g');
         }
 
+        let linkG = g.select('g.links');
+        if (linkG.empty()) {
+            linkG = g.append('g').classed('links', true);
+        }
+
+        let nodeG = g.select('g.nodes');
+        if (nodeG.empty()) {
+            nodeG = g.append('g').classed('nodes', true);
+        }
+
         const zoom = d3.zoom()
             .scaleExtent([1 / 2, 4])
             .on('zoom', (event) => {
@@ -48,12 +58,12 @@ const NetworkVisualisation = ({ nodes, links }) => {
             .force('link', d3.forceLink().id(d => d.id).distance(50))
             .force('charge', d3.forceManyBody().strength(-300))
             .force('center', d3.forceCenter(width / 2, height / 2))
-            .force('collide', d3.forceCollide().radius(50));
+            .force('collide', d3.forceCollide().radius(100));
 
         // Fonction de mise à jour des données de la simulation
         const updateSimulationData = () => {
             // Mise à jour des liens
-            const link = g.selectAll('line')
+            const link = linkG.selectAll('line')
                 .data(links, d => `${d.source.id}-${d.target.id}`);
             link.enter().append('line').merge(link)
                 .style('stroke', '#aaa')
@@ -61,7 +71,7 @@ const NetworkVisualisation = ({ nodes, links }) => {
             link.exit().remove();
 
             // Mise à jour des nœuds
-            const node = g.selectAll('circle')
+            const node = nodeG.selectAll('circle')
                 .data(nodes, d => d.id);
             node.enter().append('circle').merge(node)
                 .attr('r', 5)
@@ -80,15 +90,16 @@ const NetworkVisualisation = ({ nodes, links }) => {
 
         // Fonction pour positionner les éléments à chaque tick de la simulation
         const ticked = () => {
-            g.selectAll('line')
+            nodeG.selectAll('circle')
+                .attr('cx', d => d.x)
+                .attr('cy', d => d.y);
+            
+            linkG.selectAll('line')
                 .attr('x1', d => d.source.x)
                 .attr('y1', d => d.source.y)
                 .attr('x2', d => d.target.x)
                 .attr('y2', d => d.target.y);
 
-            g.selectAll('circle')
-                .attr('cx', d => d.x)
-                .attr('cy', d => d.y);
         };
 
         updateSimulationData();
