@@ -3,6 +3,8 @@ import NetworkVisualisation from './NetworkVisualisation';
 
 function NetworkData() {
     const [networkData, setNetworkData] = useState({ nodes: [], links: [] });
+    const [searchValue, setSearchValue] = useState("");
+    const [highlightNodeId, setHighlightNodeId] = useState(null);
 
     useEffect(() => {
         const ws = new WebSocket('ws://localhost:8080/ws');
@@ -21,7 +23,6 @@ function NetworkData() {
                 case 'dataUpdate':
                     // Mise à jour avec les différences
                     processDiffData(message.data);
-                    console.log('Data update:', message.data);
                     break;
                 default:
                     console.log('Unknown message type');
@@ -93,7 +94,6 @@ function NetworkData() {
             diffData.updated?.forEach(updatedNode => {
                 // Trouver l'index du nœud à mettre à jour
                 const nodeIndex = newNodes.findIndex(node => node.id === updatedNode.peerID);
-                console.log('Updated node:', updatedNode.peerID);
                 if (nodeIndex !== -1) {
                     // Remplacer le nœud par sa nouvelle version
                     newNodes[nodeIndex] = {
@@ -139,10 +139,31 @@ function NetworkData() {
         });
     };
 
+    const handleSearchChange = (e) => {
+        setSearchValue(e.target.value);
+    };
+
+    const handleSearchSubmit = () => {
+        setHighlightNodeId(searchValue.trim());
+    };
+
+    const handleResetSearch = () => {
+        setSearchValue("");
+        setHighlightNodeId(null);
+    };
+
     return (
         <div>
             <h2>Online peers : {networkData.nodes.length} - Connections : {networkData.links.length}</h2>
-            <NetworkVisualisation nodes={networkData.nodes} links={networkData.links} />
+            <input
+                type="text"
+                value={searchValue}
+                onChange={handleSearchChange}
+                placeholder="Search for node ID..."
+            />
+            <button onClick={handleSearchSubmit}>Search</button>
+            <button onClick={handleResetSearch}>Reset Search</button>
+            <NetworkVisualisation nodes={networkData.nodes} links={networkData.links} highlightNodeId={highlightNodeId} />
         </div>
     );
 }

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 
-const NetworkVisualisation = ({ nodes, links }) => {
+const NetworkVisualisation = ({ nodes, links, highlightNodeId }) => {
     const svgRef = useRef(null);
     const [dimensions, setDimensions] = useState({
         width: window.innerWidth,
@@ -66,7 +66,16 @@ const NetworkVisualisation = ({ nodes, links }) => {
             const link = linkG.selectAll('line')
                 .data(links, d => `${d.source.id}-${d.target.id}`);
             link.enter().append('line').merge(link)
-                .style('stroke', '#aaa')
+                .style('stroke', link => {
+                    // Si le lien est mis en évidence, changez sa couleur en rouge et stockez cette information dans les données
+                    if ((link.source.id === highlightNodeId || link.target.id === highlightNodeId) || link.source === highlightNodeId || link.target === highlightNodeId) {
+                        link.highlighted = true;
+                        return 'red';
+                    } else {
+                        link.highlighted = false;
+                        return '#999';
+                    }
+                })
                 .style('stroke-opacity', 0.6);
             link.exit().remove();
 
@@ -75,7 +84,7 @@ const NetworkVisualisation = ({ nodes, links }) => {
                 .data(nodes, d => d.id);
             node.enter().append('circle').merge(node)
                 .attr('r', 5)
-                .style('fill', 'blue')
+                .style('fill', node => node.id === highlightNodeId ? 'red' : 'blue')
                 .on('click', (event, d) => {
                     setSelectedNode(d);
                     setClickPosition({ x: event.pageX, y: event.pageY });
@@ -104,6 +113,24 @@ const NetworkVisualisation = ({ nodes, links }) => {
 
         updateSimulationData();
 
+        // Zoom and center on the highlighted node
+        if (highlightNodeId) {
+            const highlightNode = nodes.find(node => node.id === highlightNodeId);
+            if (highlightNode) {
+                const scale = 1; // Example zoom scale
+                const translate = [
+                    window.innerWidth / 2 - scale * highlightNode.x,
+                    window.innerHeight / 2 - scale * highlightNode.y
+                ];
+                svg.transition()
+                    .duration(750)
+                    .call(
+                        zoom.transform,
+                        d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
+                    );
+            }
+        }
+
         // Créez une fonction pour animer les noeuds
         function animateNodes() {
             nodes.forEach((node, i) => {
@@ -126,7 +153,7 @@ const NetworkVisualisation = ({ nodes, links }) => {
                 simulation.stop();
             }
         };
-    }, [nodes, links, dimensions]); // Exécuter à chaque changement des props `nodes` et `links` et des dimensions
+    }, [nodes, links, dimensions, highlightNodeId]); // Exécuter à chaque changement des props `nodes` et `links` et des dimensions
 
     return (
         <>
