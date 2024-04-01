@@ -9,6 +9,17 @@ const NetworkVisualisation = ({ nodes, links, highlightNodeId }) => {
     });
     const [selectedNode, setSelectedNode] = useState(null);
     const [clickPosition, setClickPosition] = useState({ x: 0, y: 0 });
+    const linksDefaultColor = '#999';
+    const linksHighlightedColor = 'red';
+    const nodesDefaultColor = 'blue';
+    const nodesHighlightedColor = 'red';
+    const nodesConnectedColor = 'orange';
+    const storageNodesColor = 'lightgreen';
+    const fullNodesColor = 'mediumorchid';
+    const clientNodesColor = 'lightcoral';
+    const miningNodesColor = 'gold';
+    const bootstrapNodesColor = 'midnightblue';
+    const observerNodesColor = 'lightpink';
 
     useEffect(() => {
         // Fonction pour mettre à jour les dimensions
@@ -62,18 +73,31 @@ const NetworkVisualisation = ({ nodes, links, highlightNodeId }) => {
 
         // Fonction de mise à jour des données de la simulation
         const updateSimulationData = () => {
+            const highlightNode = nodes.find(node => node.id === highlightNodeId);
+            let connectedNodeIds = new Set();
+            if (highlightNode) {
+                links.forEach(link => {
+                    if (link.source.id === highlightNodeId || link.target.id === highlightNodeId) {
+                        connectedNodeIds.add(link.source.id);
+                        connectedNodeIds.add(link.target.id);
+                    } else if (link.source === highlightNodeId || link.target === highlightNodeId) {
+                        connectedNodeIds.add(link.source);
+                        connectedNodeIds.add(link.target);
+                    }
+                });
+            }
             // Mise à jour des liens
             const link = linkG.selectAll('line')
                 .data(links, d => `${d.source.id}-${d.target.id}`);
             link.enter().append('line').merge(link)
                 .style('stroke', link => {
                     // Si le lien est mis en évidence, changez sa couleur en rouge et stockez cette information dans les données
-                    if ((link.source.id === highlightNodeId || link.target.id === highlightNodeId) || link.source === highlightNodeId || link.target === highlightNodeId) {
+                    if ((link.source.id === highlightNodeId || link.target.id === highlightNodeId) || (link.source === highlightNodeId || link.target === highlightNodeId)) {
                         link.highlighted = true;
-                        return 'red';
+                        return linksHighlightedColor;
                     } else {
                         link.highlighted = false;
-                        return '#999';
+                        return linksDefaultColor;
                     }
                 })
                 .style('stroke-opacity', 0.6);
@@ -84,7 +108,27 @@ const NetworkVisualisation = ({ nodes, links, highlightNodeId }) => {
                 .data(nodes, d => d.id);
             node.enter().append('circle').merge(node)
                 .attr('r', 5)
-                .style('fill', node => node.id === highlightNodeId ? 'red' : 'blue')
+                .style('fill', node => {
+                    if (node.id === highlightNodeId) { 
+                        return nodesHighlightedColor; // Couleur pour le nœud mis en évidence
+                    } else if (connectedNodeIds.has(node.id)) {
+                        return nodesConnectedColor; // Couleur pour les nœuds connectés
+                    } else if (node.nodeType === 'StorageNode') {
+                        return storageNodesColor; // Couleur pour les nœuds de stockage
+                    } else if (node.nodeType === 'FullNode') {
+                        return fullNodesColor; // Couleur pour les nœuds complets
+                    } else if (node.nodeType === 'ClientNode') {
+                        return clientNodesColor; // Couleur pour les nœuds clients
+                    } else if (node.nodeType === 'MiningNode') {
+                        return miningNodesColor; // Couleur pour les nœuds de minage
+                    } else if (node.nodeType === 'BootstrapNode') {
+                        return bootstrapNodesColor; // Couleur pour les nœuds de démarrage
+                    } else if (node.nodeType === 'ObserverNode') {
+                        return observerNodesColor; // Couleur pour les nœuds observateurs
+                    } else { 
+                        return nodesDefaultColor; // Couleur par défaut pour les nœuds
+                    }
+                })
                 .on('click', (event, d) => {
                     setSelectedNode(d);
                     setClickPosition({ x: event.pageX, y: event.pageY });
@@ -170,6 +214,8 @@ const NetworkVisualisation = ({ nodes, links, highlightNodeId }) => {
                     }}
                 >
                     <p>ID: {selectedNode.id}</p>
+                    <p>Node type: {selectedNode.nodeType}</p>
+                    <p>Topics: {selectedNode.topicsList.join(', ')}</p>
                     <button onClick={() => setSelectedNode(null)}>Close</button>
                 </div>
             )}
