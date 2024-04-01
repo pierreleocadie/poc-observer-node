@@ -199,6 +199,67 @@ const NetworkVisualisation = ({ nodes, links, highlightNodeId }) => {
         };
     }, [nodes, links, dimensions, highlightNodeId]); // Exécuter à chaque changement des props `nodes` et `links` et des dimensions
 
+    useEffect(() => {
+        const svg = d3.select(svgRef.current);
+    
+        // Définissez les données de la légende
+        const legendData = [
+            { color: nodesDefaultColor, text: "Default Node" },
+            { color: nodesHighlightedColor, text: "Highlighted Node" },
+            { color: nodesConnectedColor, text: "Connected Node" },
+            { color: storageNodesColor, text: "Storage Node" },
+            { color: fullNodesColor, text: "Full Node" },
+            { color: clientNodesColor, text: "Client Node" },
+            { color: miningNodesColor, text: "Mining Node" },
+            { color: bootstrapNodesColor, text: "Bootstrap Node" },
+            { color: observerNodesColor, text: "Observer Node" },
+        ];
+    
+        // Ajoutez un groupe SVG pour la légende
+        let legend = svg.select(".legend");
+        if (legend.empty()) {
+            legend = svg.append("g").classed("legend", true)
+                         .attr("transform", "translate(10, " + (dimensions.height / 2) + ")");
+        }
+        
+        // Ajoutez un fond blanc avec une bordure grise pour la légende
+        const legendPadding = 5;
+        const legendBackground = legend.select(".legend-background");
+        if (legendBackground.empty()) {
+            legend.insert("rect", ":first-child")
+                .classed("legend-background", true)
+                .attr("x", -legendPadding)
+                .attr("y", -legendPadding)
+                .attr("width", 155) // Assurez-vous que cette largeur est suffisante pour tout le texte
+                .attr("height", legendData.length * 20 + 2 * legendPadding)
+                .style("fill", "white")
+                .style("stroke", "grey")
+                .style("stroke-width", "1px");
+        }
+
+        // Ajoutez des rectangles et du texte pour chaque type de nœud
+        const legendItem = legend.selectAll(".legend-item")
+            .data(legendData)
+            .enter()
+            .append("g")
+            .classed("legend-item", true)
+            .attr("transform", (d, i) => `translate(0, ${i * 20})`);
+    
+        legendItem.append("rect")
+            .attr("width", 18)
+            .attr("height", 18)
+            .style("fill", d => d.color);
+    
+        legendItem.append("text")
+            .attr("x", 24)
+            .attr("y", 9)
+            .attr("dy", ".35em")
+            .text(d => d.text);
+    
+        // Mettez à jour la fonction de mise à jour de la simulation et d'autres logiques si nécessaire...
+    }, [dimensions.height]); // S'assurer que la légende se repositionne correctement si la hauteur de la fenêtre change
+    
+
     return (
         <>
             <svg ref={svgRef}></svg>
