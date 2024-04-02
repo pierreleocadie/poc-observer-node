@@ -5,6 +5,8 @@ function NetworkData() {
     const [networkData, setNetworkData] = useState({ nodes: [], links: [] });
     const [searchValue, setSearchValue] = useState("");
     const [highlightNodeId, setHighlightNodeId] = useState(null);
+    const [pubsubSignals, setPubsubSignals] = useState([]);
+    const [selectedTopic, setSelectedTopic] = useState("AskMyFilesList"); // État pour stocker le sujet sélectionné
 
     useEffect(() => {
         const ws = new WebSocket('ws://localhost:8080/ws');
@@ -24,6 +26,16 @@ function NetworkData() {
                     // Mise à jour avec les différences
                     processDiffData(message.data);
                     break;
+                case 'pubsubMessageSignal':
+                    // Traiter le signal pubsub et mettre à jour l'état
+                    console.log(message.data.topic, selectedTopic)
+                    if (message.data.topic === selectedTopic) {
+                        setPubsubSignals(currentSignals => {
+                            // Si des signaux sont déjà en traitement, ils seront écrasés, s'assurer que cela est acceptable
+                            return [message.data];
+                        });
+                    }
+                    break;
                 default:
                     console.log('Unknown message type');
             }
@@ -37,7 +49,7 @@ function NetworkData() {
         return () => {
             ws.close();
         };
-    }, []);
+    }, [selectedTopic]);
 
     const processInitData = (data) => {
         const nodes = data.map(node => ({
@@ -173,9 +185,15 @@ function NetworkData() {
                 onChange={handleSearchChange}
                 placeholder="Search for node ID..."
             />
+            <select value={selectedTopic} onChange={e => setSelectedTopic(e.target.value)}>
+                <option value="AskMyFilesList">AskMyFilesList</option>
+                <option value="ReceiveMyFilesList">ReceiveMyFilesList</option>
+                <option value="BlockAnnouncement">BlockAnnouncement</option>
+                <option value="ClientAnnouncement">ClientAnnouncement</option>
+            </select>
             <button onClick={handleSearchSubmit}>Search</button>
             <button onClick={handleResetSearch}>Reset Search</button>
-            <NetworkVisualisation nodes={networkData.nodes} links={networkData.links} highlightNodeId={highlightNodeId} />
+            <NetworkVisualisation nodes={networkData.nodes} links={networkData.links} highlightNodeId={highlightNodeId} pubsubSignals={pubsubSignals}/>
         </div>
     );
 }

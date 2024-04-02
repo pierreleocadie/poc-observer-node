@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 
-const NetworkVisualisation = ({ nodes, links, highlightNodeId }) => {
+const NetworkVisualisation = ({ nodes, links, highlightNodeId, pubsubSignals, selectedTopic }) => {
     const svgRef = useRef(null);
     const [dimensions, setDimensions] = useState({
         width: window.innerWidth,
@@ -230,7 +230,7 @@ const NetworkVisualisation = ({ nodes, links, highlightNodeId }) => {
                 .classed("legend-background", true)
                 .attr("x", -legendPadding)
                 .attr("y", -legendPadding)
-                .attr("width", 155) // Assurez-vous que cette largeur est suffisante pour tout le texte
+                .attr("width", 160) // Assurez-vous que cette largeur est suffisante pour tout le texte
                 .attr("height", legendData.length * 20 + 2 * legendPadding)
                 .style("fill", "white")
                 .style("stroke", "grey")
@@ -259,7 +259,63 @@ const NetworkVisualisation = ({ nodes, links, highlightNodeId }) => {
         // Mettez à jour la fonction de mise à jour de la simulation et d'autres logiques si nécessaire...
     }, [dimensions.height]); // S'assurer que la légende se repositionne correctement si la hauteur de la fenêtre change
     
+    useEffect(() => {
+        const svg = d3.select(svgRef.current);
+        const visited = new Set(); // Ensemble pour suivre les nœuds déjà visités
+        const linkG = svg.select('g.links');
+    
+        // Fonction pour propager le signal à partir d'un nœud source
+        const propagateSignal = (sourceNodeId, level = 0) => {
+            // Trouvez le nœud source par ID
+            const sourceNode = nodes.find(n => n.id === sourceNodeId);
+            
+            if (sourceNode && !visited.has(sourceNode.id)) {
+                visited.add(sourceNode.id); // Marquez le nœud comme visité
+    
+                // Trouvez tous les nœuds directement connectés au nœud source
+                const connections = links.filter(link => 
+                    link.source.id === sourceNodeId || link.target.id === sourceNodeId
+                );
+    
+                connections.forEach(connection => {
+                    const targetNodeId = connection.source.id === sourceNodeId ? connection.target.id : connection.source.id;
+                    const targetNode = nodes.find(n => n.id === targetNodeId);
+    
+                    // Assurez-vous que le nœud cible existe et n'a pas été visité
+                    if (targetNode && !visited.has(targetNode.id)) {
+                        // Créez un élément temporaire pour l'animation
+                        const path = linkG.append('path')
+                            .attr('d', `M${sourceNode.x},${sourceNode.y} L${targetNode.x},${targetNode.y}`)
+                            .attr('stroke', 'black')
+                            .attr('stroke-width', 1)
+                            .attr('fill', 'none');
 
+                        const totalLength = path.node().getTotalLength();
+                        path.attr('stroke-dasharray', totalLength + ' ' + totalLength)
+                            .attr('stroke-dashoffset', totalLength)
+                            .transition()
+                            .duration(2500)
+                            .ease(d3.easeLinear)
+                            .attr('stroke-dashoffset', 0)
+                            .transition()
+                            .duration(1000)
+                            .ease(d3.easeLinear)
+                            .attr('stroke-dashoffset', -totalLength)
+                            .on('end', function() {
+                                path.remove(); // Supprimez l'élément après l'animation
+                                propagateSignal(targetNode.id, level + 1); // Propagez récursivement à partir du nœud cible
+                            });
+                    }
+                });
+            }
+        };
+        
+        pubsubSignals.forEach(signal => {
+            propagateSignal(signal.from); // Commencez la propagation à partir du nœud d'origine de chaque signal
+        });
+    
+    }, [pubsubSignals, links, nodes, selectedTopic]);      
+    
     return (
         <>
             <svg ref={svgRef}></svg>
