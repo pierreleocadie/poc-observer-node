@@ -177,22 +177,26 @@ function NetworkData() {
     };
 
     return (
-        <div>
-            <h2>Online peers : {networkData.nodes.length} - Connections : {networkData.links.length}</h2>
-            <input
-                type="text"
-                value={searchValue}
-                onChange={handleSearchChange}
-                placeholder="Search for node ID..."
-            />
-            <select value={selectedTopic} onChange={e => setSelectedTopic(e.target.value)}>
-                <option value="AskMyFilesList">AskMyFilesList</option>
-                <option value="ReceiveMyFilesList">ReceiveMyFilesList</option>
-                <option value="BlockAnnouncement">BlockAnnouncement</option>
-                <option value="ClientAnnouncement">ClientAnnouncement</option>
-            </select>
-            <button onClick={handleSearchSubmit}>Search</button>
-            <button onClick={handleResetSearch}>Reset Search</button>
+        <div className="network-container">
+            <div className="network-header">
+                <h2>Online peers: {networkData.nodes.length} - Connections: {networkData.links.length}</h2>
+                <div className="network-controls">
+                    <select value={selectedTopic} onChange={e => setSelectedTopic(e.target.value)}>
+                        <option value="AskMyFilesList">AskMyFilesList</option>
+                        <option value="ReceiveMyFilesList">ReceiveMyFilesList</option>
+                        <option value="BlockAnnouncement">BlockAnnouncement</option>
+                        <option value="ClientAnnouncement">ClientAnnouncement</option>
+                    </select>
+                    <input
+                        type="text"
+                        value={searchValue}
+                        onChange={handleSearchChange}
+                        placeholder="Search for node ID..."
+                    />
+                    <button onClick={handleSearchSubmit}>Search</button>
+                    <button onClick={handleResetSearch}>Reset</button>
+                </div>
+            </div>
             <NetworkVisualisation nodes={networkData.nodes} links={networkData.links} highlightNodeId={highlightNodeId} pubsubSignals={pubsubSignals}/>
         </div>
     );

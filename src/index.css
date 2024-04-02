@@ -19,3 +19,21 @@ body, html {
   height: 100%;
   overflow: hidden; /* Pour éviter le défilement si ce n'est pas nécessaire */
 }
+
+.network-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.network-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background-color: #f5f5f5;
+}
+
+.network-controls {
+  display: flex;
+  gap: 10px; /* Ajuste l'espace entre les éléments de contrôle */
+}
